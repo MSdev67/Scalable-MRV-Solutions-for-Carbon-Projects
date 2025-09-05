@@ -1,0 +1,5 @@
+farm_id,name,area_ha,crop_type,tree_count,soil_organic_carbon,establishment_date
+farm_001,Green Valley Farm,5.2,agroforestry,150,1.8,2023-01-15
+farm_002,Sunrise Rice Fields,3.5,rice,0,1.2,2023-02-20
+farm_003,Organic Agroforest,7.1,agroforestry,200,2.1,2023-01-10
+farm_004,Rice Plains,4.8,rice,0,1.5,2023-03-05

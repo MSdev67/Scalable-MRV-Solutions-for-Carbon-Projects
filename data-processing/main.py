@@ -1,38 +1,31 @@
 #!/usr/bin/env python3
 """
-Main data processing script for MRV Solutions
-Handles satellite data processing, carbon calculations, and report generation
+Simplified data processing script for MRV Solutions
+Handles carbon calculations and basic data processing
 """
 
 import argparse
 import json
 import os
+import pandas as pd
+import numpy as np
 from datetime import datetime
 from carbon_calculation.carbon_model import CarbonModel
-from satellite.ndvi_calculator import NDVICalculator
-from geospatial.farm_boundary import FarmBoundaryProcessor
-
-def process_satellite_data(args):
-    """Process satellite imagery for NDVI calculation"""
-    print(f"Processing satellite data for farm {args.farm_id}")
-    
-    calculator = NDVICalculator(args.red_band, args.nir_band)
-    report_path = calculator.create_ndvi_report(args.farm_id, args.output_dir)
-    
-    if report_path:
-        print(f"NDVI report generated: {report_path}")
-        return report_path
-    else:
-        print("Failed to generate NDVI report")
-        return None
 
 def calculate_carbon_credits(args):
     """Calculate carbon credits for a farm"""
     print(f"Calculating carbon credits for farm {args.farm_id}")
     
     # Load farm data
-    with open(args.farm_data, 'r') as f:
-        farm_data = json.load(f)
+    try:
+        with open(args.farm_data, 'r') as f:
+            farm_data = json.load(f)
+    except FileNotFoundError:
+        print(f"Error: Farm data file {args.farm_data} not found")
+        return None
+    except json.JSONDecodeError:
+        print(f"Error: Invalid JSON in farm data file {args.farm_data}")
+        return None
     
     # Initialize appropriate model
     model_type = farm_data.get('crop_type', 'agroforestry').lower()
@@ -53,43 +46,67 @@ def calculate_carbon_credits(args):
     report = model.generate_verification_report(farm_data, results)
     
     # Save results
+    os.makedirs(args.output_dir, exist_ok=True)
     output_path = os.path.join(args.output_dir, f'carbon_report_{args.farm_id}.json')
+    
     with open(output_path, 'w') as f:
         json.dump(report, f, indent=2)
     
     print(f"Carbon calculation complete: {output_path}")
+    print(f"Total credits: {results.get('total_credits', 0):.2f}")
+    
     return output_path
 
-def process_farm_boundaries(args):
-    """Process farm boundary data"""
-    print("Processing farm boundaries")
+def process_batch_farms(args):
+    """Process multiple farms from a CSV file"""
+    print(f"Processing batch farms from {args.input_file}")
     
-    processor = FarmBoundaryProcessor(args.input_file)
-    
-    if args.export_web:
-        web_path = os.path.join(args.output_dir, 'farm_boundaries_web.geojson')
-        processor.export_for_web(web_path)
-        print(f"Web-optimized boundaries exported: {web_path}")
-    
-    if args.stats:
-        stats = processor.calculate_statistics()
-        stats_path = os.path.join(args.output_dir, 'boundary_statistics.json')
-        with open(stats_path, 'w') as f:
-            json.dump(stats, f, indent=2)
-        print(f"Boundary statistics exported: {stats_path}")
-    
-    return True
+    try:
+        # Read CSV file
+        df = pd.read_csv(args.input_file)
+        print(f"Loaded {len(df)} farms")
+        
+        # Process each farm
+        results = []
+        for _, row in df.iterrows():
+            farm_data = row.to_dict()
+            model_type = farm_data.get('crop_type', 'agroforestry').lower()
+            
+            model = CarbonModel(model_type=model_type)
+            validation_errors = model.validate_farm_data(farm_data)
+            
+            if validation_errors:
+                print(f"Skipping farm {farm_data.get('farm_id', 'unknown')} due to validation errors")
+                continue
+            
+            calculation = model.calculate_credits(farm_data)
+            results.append({
+                'farm_id': farm_data.get('farm_id', 'unknown'),
+                'crop_type': farm_data.get('crop_type'),
+                'area_ha': farm_data.get('area_ha'),
+                'calculated_credits': calculation.get('total_credits', 0),
+                'calculation_date': datetime.now().isoformat()
+            })
+        
+        # Save batch results
+        os.makedirs(args.output_dir, exist_ok=True)
+        output_path = os.path.join(args.output_dir, 'batch_results.csv')
+        
+        results_df = pd.DataFrame(results)
+        results_df.to_csv(output_path, index=False)
+        
+        print(f"Batch processing complete: {output_path}")
+        print(f"Total credits across all farms: {results_df['calculated_credits'].sum():.2f}")
+        
+        return output_path
+        
+    except Exception as e:
+        print(f"Error processing batch file: {e}")
+        return None
 
 def main():
     parser = argparse.ArgumentParser(description='MRV Solutions Data Processing')
     subparsers = parser.add_subparsers(dest='command', help='Command to execute')
-    
-    # Satellite data processing command
-    satellite_parser = subparsers.add_parser('satellite', help='Process satellite imagery')
-    satellite_parser.add_argument('--farm-id', required=True, help='Farm ID')
-    satellite_parser.add_argument('--red-band', required=True, help='Path to red band image')
-    satellite_parser.add_argument('--nir-band', required=True, help='Path to NIR band image')
-    satellite_parser.add_argument('--output-dir', default='./output', help='Output directory')
     
     # Carbon calculation command
     carbon_parser = subparsers.add_parser('carbon', help='Calculate carbon credits')
@@ -97,12 +114,10 @@ def main():
     carbon_parser.add_argument('--farm-data', required=True, help='Path to farm data JSON')
     carbon_parser.add_argument('--output-dir', default='./output', help='Output directory')
     
-    # Boundary processing command
-    boundary_parser = subparsers.add_parser('boundary', help='Process farm boundaries')
-    boundary_parser.add_argument('--input-file', required=True, help='Input boundary file')
-    boundary_parser.add_argument('--output-dir', default='./output', help='Output directory')
-    boundary_parser.add_argument('--export-web', action='store_true', help='Export web-optimized version')
-    boundary_parser.add_argument('--stats', action='store_true', help='Calculate statistics')
+    # Batch processing command
+    batch_parser = subparsers.add_parser('batch', help='Process multiple farms from CSV')
+    batch_parser.add_argument('--input-file', required=True, help='Input CSV file with farm data')
+    batch_parser.add_argument('--output-dir', default='./output', help='Output directory')
     
     args = parser.parse_args()
     
@@ -110,12 +125,10 @@ def main():
     os.makedirs(args.output_dir, exist_ok=True)
     
     # Execute the appropriate command
-    if args.command == 'satellite':
-        process_satellite_data(args)
-    elif args.command == 'carbon':
+    if args.command == 'carbon':
         calculate_carbon_credits(args)
-    elif args.command == 'boundary':
-        process_farm_boundaries(args)
+    elif args.command == 'batch':
+        process_batch_farms(args)
     else:
         parser.print_help()
 

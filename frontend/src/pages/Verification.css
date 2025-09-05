@@ -1,0 +1,183 @@
+.verification-page {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 30px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.page-header h1 {
+  margin-bottom: 20px;
+  color: #2c3e50;
+}
+
+.tabs {
+  display: flex;
+  gap: 10px;
+}
+
+.tabs button {
+  padding: 10px 20px;
+  border: none;
+  background: #f8f9fa;
+  color: #6c757d;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s;
+}
+
+.tabs button.active {
+  background: #007bff;
+  color: white;
+}
+
+.tabs button:hover:not(.active) {
+  background: #e9ecef;
+}
+
+.verification-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.verification-card {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-left: 4px solid #6c757d;
+}
+
+.verification-card.pending {
+  border-left-color: #ffc107;
+}
+
+.verification-card.approved {
+  border-left-color: #28a745;
+}
+
+.verification-card.rejected {
+  border-left-color: #dc3545;
+}
+
+.verification-info {
+  flex: 1;
+}
+
+.verification-info h3 {
+  margin-top: 0;
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+.verification-info p {
+  margin: 5px 0;
+  color: #6c757d;
+}
+
+.verification-info strong {
+  color: #495057;
+}
+
+.verification-actions {
+  display: flex;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.approve-btn {
+  background: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.approve-btn:hover {
+  background: #218838;
+}
+
+.reject-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-weight: 500;
+}
+
+.reject-btn:hover {
+  background: #c82333;
+}
+
+.status-badge {
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  margin-left: 8px;
+}
+
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.approved {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.rejected {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.empty-state p {
+  color: #6c757d;
+  font-size: 18px;
+  margin: 0;
+}
+
+.loading {
+  text-align: center;
+  padding: 40px;
+  font-size: 18px;
+  color: #6c757d;
+}
+
+@media (max-width: 768px) {
+  .verification-card {
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .verification-actions {
+    align-self: stretch;
+  }
+  
+  .approve-btn,
+  .reject-btn {
+    flex: 1;
+  }
+}
